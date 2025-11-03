@@ -1,0 +1,160 @@
+.landing-page {
+  background-color: #ffffff;
+  min-height: 812px;
+  min-width: 375px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 0 16px;
+}
+
+/* 상단 타이틀 섹션 */
+.title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 50px 0 16px 0;
+  width: 100%;
+}
+
+.title-section .subtitle {
+  color: #888888;
+  font-family: "Pretendard", sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.title-section .main-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.title-section .main-title p {
+  color: #000000;
+  font-family: "Pretendard", sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* 중간 섹션 */
+.content-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+  padding-top: 100px;
+  padding-bottom: 100px;
+}
+
+.content-section .section-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.content-section .heading {
+  color: #000000;
+  font-family: "Pretendard", sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.step-number {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 50%;
+  background-color: #F0F0F0;
+  border: 1px solid #CCCCCC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Pretendard", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #666666;
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.step-title {
+  color: #000000;
+  font-family: "Pretendard", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.step-description {
+  color: #555555;
+  font-family: "Pretendard", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 하단 CTA 버튼 */
+.cta-section {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  padding-bottom: 50px;
+  background-color: #ffffff;
+  z-index: 10;
+}
+
+.start-button {
+  width: 100%;
+  max-width: 375px;
+  margin: 0 auto;
+  height: 56px;
+  background-color: #3183F6;
+  border: none;
+  border-radius: 16px;
+  color: #FFFFFF;
+  font-family: "Pretendard", sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.start-button:hover {
+  background-color: #2563eb;
+}
+
+.start-button:active {
+  background-color: #1d4ed8;
+}

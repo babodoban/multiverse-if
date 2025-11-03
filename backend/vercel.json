@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "api/generate-story/index.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ]
+}
+

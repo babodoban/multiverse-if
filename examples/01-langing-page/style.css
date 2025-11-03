@@ -1,0 +1,188 @@
+.iphone-mini {
+    background-color: #ffffff;
+    min-height: 812px;
+    min-width: 375px;
+    position: relative;
+    width: 100%;
+  }
+  
+  .iphone-mini .bottom-CTA {
+    align-items: flex-start;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    left: calc(50.00% - 188px);
+    padding: 16px 16px 50px;
+    position: absolute;
+    width: 375px;
+  }
+  
+  .iphone-mini .frame {
+    align-items: center;
+    align-self: stretch;
+    background-color: #3183f6;
+    border-radius: 16px;
+    display: flex;
+    gap: 8px;
+    height: 56px;
+    justify-content: center;
+    padding: 8px;
+    position: relative;
+    width: 100%;
+  }
+  
+  .iphone-mini .text-wrapper {
+    color: #ffffff;
+    font-family: "Pretendard-Medium", Helvetica;
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0;
+    line-height: normal;
+    position: relative;
+    white-space: nowrap;
+    width: fit-content;
+  }
+  
+  .iphone-mini .title {
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    left: 0;
+    padding: 50px 16px 16px;
+    position: absolute;
+    top: 0;
+    width: 375px;
+  }
+  
+  .iphone-mini .div {
+    align-self: stretch;
+    color: #666666;
+    font-family: "Pretendard-Medium", Helvetica;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.40px;
+    line-height: 22.4px;
+    margin-top: -1.00px;
+    position: relative;
+  }
+  
+  .iphone-mini .p {
+    align-self: stretch;
+    color: #000000;
+    font-family: "Pretendard-Bold", Helvetica;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.55px;
+    line-height: 30.8px;
+    position: relative;
+  }
+  
+  .iphone-mini .frame-2 {
+    align-items: flex-start;
+    bottom: 134px;
+    display: flex;
+    flex-direction: column;
+    left: calc(50.00% - 188px);
+    position: absolute;
+    width: 375px;
+  }
+  
+  .iphone-mini .frame-3 {
+    align-items: flex-start;
+    align-self: stretch;
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
+    padding: 16px;
+    position: relative;
+    width: 100%;
+  }
+  
+  .iphone-mini .div-wrapper {
+    align-items: center;
+    aspect-ratio: 1;
+    background-color: #f2f4f6;
+    border-radius: 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 24px;
+    justify-content: center;
+    padding: 8px;
+    position: relative;
+    width: 24px;
+  }
+  
+  .iphone-mini .text-wrapper-2 {
+    align-self: stretch;
+    color: #666666;
+    font-family: "Pretendard-Bold", Helvetica;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.35px;
+    line-height: 19.6px;
+    margin-bottom: -5.00px;
+    margin-top: -7.00px;
+    position: relative;
+    text-align: center;
+  }
+  
+  .iphone-mini .title-line {
+    align-items: flex-start;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 8px;
+    position: relative;
+  }
+  
+  .iphone-mini .text-wrapper-3 {
+    align-self: stretch;
+    color: #000000;
+    font-family: "Pretendard-Medium", Helvetica;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.40px;
+    line-height: 22.4px;
+    margin-top: -1.00px;
+    position: relative;
+  }
+  
+  .iphone-mini .text-wrapper-4 {
+    align-self: stretch;
+    color: #666666;
+    font-family: "Pretendard-Medium", Helvetica;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.35px;
+    line-height: 19.6px;
+    position: relative;
+  }
+  
+  .iphone-mini .title-2 {
+    align-items: flex-start;
+    bottom: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    left: calc(50.00% - 188px);
+    padding: 16px;
+    position: absolute;
+    width: 375px;
+  }
+  
+  .iphone-mini .text-wrapper-5 {
+    align-self: stretch;
+    color: #000000;
+    font-family: "Pretendard-Bold", Helvetica;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.55px;
+    line-height: 30.8px;
+    margin-top: -1.00px;
+    position: relative;
+  }
+  

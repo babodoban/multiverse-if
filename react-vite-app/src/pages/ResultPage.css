@@ -1,0 +1,161 @@
+.result-page {
+  background-color: #ffffff;
+  min-height: 812px;
+  min-width: 375px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px;
+  padding-bottom: 100px;
+}
+
+/* 상단 타이틀 */
+.page-title {
+  padding: 50px 0 32px 0;
+  width: 100%;
+}
+
+.page-title h1 {
+  color: #000000;
+  font-family: "Pretendard", sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* 입력 섹션 */
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-label {
+  color: #666666;
+  font-family: "Pretendard", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 결과 표시용 입력 필드 (읽기 전용) */
+.display-input {
+  width: 100%;
+  height: 56px;
+  background-color: #FFFFFF;
+  border: none;
+  border-radius: 16px;
+  padding: 16px;
+  color: #000000;
+  font-family: "Pretendard", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  outline: none;
+  cursor: default;
+  pointer-events: none;
+}
+
+.display-input:focus,
+.display-input:active {
+  background-color: #FFFFFF;
+}
+
+.display-input::placeholder {
+  color: #cacaca;
+}
+
+/* 결과 표시용 텍스트 영역 (읽기 전용) */
+.display-textarea {
+  width: 100%;
+  min-height: 150px;
+  background-color: #FFFFFF;
+  border: none;
+  border-radius: 16px;
+  padding: 16px;
+  color: #000000;
+  font-family: "Pretendard", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  outline: none;
+  resize: none;
+  cursor: default;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.display-textarea:focus,
+.display-textarea:active {
+  background-color: #FFFFFF;
+}
+
+.display-textarea::placeholder {
+  color: #cacaca;
+}
+
+/* 하단 네비게이션 */
+.bottom-navigation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  padding-bottom: 50px;
+  background-color: #ffffff;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.restart-button {
+  flex: 1;
+  height: 56px;
+  background-color: #e3f2ff;
+  border: none;
+  border-radius: 16px;
+  color: #3183f6;
+  font-family: "Pretendard", sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.restart-button:hover {
+  background-color: #c5e6ff;
+}
+
+.restart-button:active {
+  background-color: #a5d9ff;
+}
+
+.share-button {
+  flex: 1;
+  height: 56px;
+  background-color: #3183f6;
+  border: none;
+  border-radius: 16px;
+  color: #ffffff;
+  font-family: "Pretendard", sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.share-button:hover {
+  background-color: #2563eb;
+}
+
+.share-button:active {
+  background-color: #1d4ed8;
+}
