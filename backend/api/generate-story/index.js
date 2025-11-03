@@ -84,7 +84,7 @@ export default async function handler(req, res) {
     // ChatGPT API 호출
     // ========================================
     const completion = await openai.chat.completions.create({
-      model: 'gpt-5', // 고품질 결과를 원할 경우 gpt-5 / 비용 절감 시 gpt-4o-mini
+      model: 'gpt-4o-mini', // 고품질 결과를 원할 경우 gpt-5 / 비용 절감 시 gpt-4o-mini
       messages: [
         {
           role: 'system',
