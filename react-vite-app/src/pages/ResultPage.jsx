@@ -7,8 +7,9 @@ export const ResultPage = () => {
   const navigate = useNavigate();
   const { resultInfo, resetScenario } = useAppContext();
   const textareaRef = useRef(null);
-
   const messageTextareaRef = useRef(null);
+  const summaryTextareaRef = useRef(null); // 한 줄 요약용 ref 추가
+  const relationshipTextareaRef = useRef(null); // 연애상태용 ref 추가
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -20,7 +21,17 @@ export const ResultPage = () => {
       messageTextareaRef.current.style.height = 'auto';
       messageTextareaRef.current.style.height = `${messageTextareaRef.current.scrollHeight}px`;
     }
-  }, [resultInfo.story, resultInfo.message]);
+    if (summaryTextareaRef.current) {
+      // 한 줄 요약 높이 자동 조정
+      summaryTextareaRef.current.style.height = 'auto';
+      summaryTextareaRef.current.style.height = `${summaryTextareaRef.current.scrollHeight}px`;
+    }
+    if (relationshipTextareaRef.current) {
+      // 연애상태 높이 자동 조정
+      relationshipTextareaRef.current.style.height = 'auto';
+      relationshipTextareaRef.current.style.height = `${relationshipTextareaRef.current.scrollHeight}px`;
+    }
+  }, [resultInfo.story, resultInfo.message, resultInfo.summary, resultInfo.relationship]);
 
   const handleRestart = () => {
     resetScenario(); // 시나리오만 초기화 (기본정보는 유지)
@@ -69,11 +80,12 @@ export const ResultPage = () => {
         {/* 한 줄 요약 */}
         <div className="input-group">
           <label className="input-label">한 줄 요약</label>
-          <input
-            type="text"
-            className="display-input"
+          <textarea
+            ref={summaryTextareaRef}
+            className="display-textarea"
             value={resultInfo.summary}
             readOnly
+            rows={1}
           />
         </div>
 
@@ -113,11 +125,12 @@ export const ResultPage = () => {
         {/* 연애상태 */}
         <div className="input-group">
           <label className="input-label">연애상태</label>
-          <input
-            type="text"
-            className="display-input"
-            value={resultInfo.relationship}
+          <textarea
+            ref={relationshipTextareaRef}
+            className="display-textarea"
+            value={String(resultInfo.relationship || '')}
             readOnly
+            rows={1}
           />
         </div>
 
@@ -127,7 +140,7 @@ export const ResultPage = () => {
           <textarea
             ref={textareaRef}
             className="display-textarea"
-            value={resultInfo.story}
+            value={typeof resultInfo.story === 'string' ? resultInfo.story : String(resultInfo.story || '')}
             readOnly
           />
         </div>

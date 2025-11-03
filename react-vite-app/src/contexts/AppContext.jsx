@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { storage } from '../utils/storage';
 import { generateStory as apiGenerateStory } from '../utils/api';
 
@@ -95,7 +95,18 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  // 중복 호출 방지를 위한 ref (컴포넌트 생명주기 동안 유지)
+  const isGeneratingRef = useRef(false);
+
   const generateStory = useCallback(async () => {
+    // 이미 생성 중이면 중복 호출 방지 (조용히 반환 - 로그 제거)
+    if (isGeneratingRef.current) {
+      return null;
+    }
+
+    // 로딩 상태 확인 (ref를 사용하여 최신 상태 확인, 의존성 배열 문제 방지)
+    // setLoadingState가 비동기이므로 직접 확인하는 것보다 ref 사용이 안전함
+
     // 캐시 확인 (개발 중에는 캐시 사용 안 함 - 주석 처리)
     // const cached = storage.loadCache(basicInfo, scenario);
     // if (cached) {
@@ -113,6 +124,9 @@ export const AppProvider = ({ children }) => {
     //   });
     //   return cached.story;
     // }
+
+    // 중복 호출 방지 플래그 설정
+    isGeneratingRef.current = true;
 
     // 로딩 시작
     const startTime = Date.now();
@@ -138,25 +152,32 @@ export const AppProvider = ({ children }) => {
       // 타이머 정리
       clearInterval(timer);
       
-      // 결과 저장
-      setGeneratedStory(result.story);
+      // 결과 저장 (객체인 경우 문자열로 변환)
+      const storyText = typeof result.story === 'string' 
+        ? result.story 
+        : (result.story ? JSON.stringify(result.story, null, 2) : '');
+      const relationshipText = typeof result.relationship === 'string'
+        ? result.relationship
+        : (result.relationship ? String(result.relationship) : '');
+      
+      setGeneratedStory(storyText);
       setResultInfo({
         job: result.job || basicInfo.job || '',
         location: result.location || '',
-        relationship: result.relationship || basicInfo.relationship || '',
-        story: result.story || '',
+        relationship: relationshipText || basicInfo.relationship || '',
+        story: storyText,
         multiverseName: result.multiverseName || '',
         summary: result.summary || '',
         keywords: result.keywords || '',
         message: result.message || '',
       });
 
-      // 캐시에 저장
+      // 캐시에 저장 (문자열로 변환된 값 저장)
       storage.saveCache(basicInfo, scenario, {
         job: result.job || basicInfo.job || '',
         location: result.location || '',
-        relationship: result.relationship || basicInfo.relationship || '',
-        story: result.story || '',
+        relationship: relationshipText || basicInfo.relationship || '',
+        story: storyText,
         multiverseName: result.multiverseName || '',
         summary: result.summary || '',
         keywords: result.keywords || '',
@@ -170,6 +191,9 @@ export const AppProvider = ({ children }) => {
         elapsedTime: Math.floor((Date.now() - startTime) / 1000),
         error: null,
       });
+      
+      // 플래그 해제
+      isGeneratingRef.current = false;
       
       return result.story;
     } catch (error) {
@@ -205,6 +229,9 @@ export const AppProvider = ({ children }) => {
         elapsedTime: Math.floor((Date.now() - startTime) / 1000),
         error: errorMessage,
       });
+
+      // 플래그 해제
+      isGeneratingRef.current = false;
 
       // 에러 발생 시 더미 데이터 반환하지 않고 에러만 표시
       // (로딩 화면에서 에러 메시지가 표시되도록)

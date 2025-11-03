@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './contexts/AppContext';
 import { LandingPage } from './pages/LandingPage';
 import { BasicInfoPage } from './pages/BasicInfoPage';
@@ -12,7 +12,8 @@ function App() {
     <AppProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<Navigate replace to="/if-start" />} />
+          <Route path="/if-start" element={<LandingPage />} />
           <Route path="/basic-info" element={<BasicInfoPage />} />
           <Route path="/scenario" element={<ScenarioInputPage />} />
           <Route path="/loading" element={<LoadingPage />} />

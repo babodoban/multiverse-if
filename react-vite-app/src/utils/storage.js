@@ -11,8 +11,10 @@ const generateCacheKey = (basicInfo, scenario) => {
     interests: basicInfo.interests,
     relationship: basicInfo.relationship,
     children: basicInfo.children,
+    summary: basicInfo.summary,
     importantMoment: scenario.importantMoment,
     alternativeChoice: scenario.alternativeChoice,
+    thoughtAtThatTime: scenario.thoughtAtThatTime,
   };
   return JSON.stringify(data);
 };
@@ -50,7 +52,7 @@ export const storage = {
   // 결과 캐시 저장
   saveCache: (basicInfo, scenario, result) => {
     try {
-      const cache = this.loadAllCache();
+      const cache = storage.loadAllCache();
       const key = generateCacheKey(basicInfo, scenario);
       cache[key] = {
         result,
@@ -65,7 +67,7 @@ export const storage = {
   // 결과 캐시 불러오기
   loadCache: (basicInfo, scenario) => {
     try {
-      const cache = this.loadAllCache();
+      const cache = storage.loadAllCache();
       const key = generateCacheKey(basicInfo, scenario);
       const cached = cache[key];
       

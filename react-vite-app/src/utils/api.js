@@ -24,17 +24,39 @@ export const generateStory = async (basicInfo, scenario) => {
     scenario,
   });
 
+  // 앱 환경 감지 (웹뷰 확인)
+  const isWebView = () => {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    return /android/i.test(userAgent) || /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+  };
+
+  // 현재 환경 정보 로깅
+  const environmentInfo = {
+    isWebView: isWebView(),
+    userAgent: navigator.userAgent,
+    origin: window.location.origin,
+    protocol: window.location.protocol,
+    host: window.location.host,
+    url: `${API_BASE_URL}/generate-story`,
+  };
+  console.log('🌍 환경 정보:', environmentInfo);
+
   try {
     const response = await fetch(`${API_BASE_URL}/generate-story`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // 앱 환경에서 필요한 경우 Origin 헤더 추가
+        ...(environmentInfo.isWebView && window.location.origin ? { 'Origin': window.location.origin } : {}),
       },
       body: JSON.stringify({
         basicInfo,
         scenario,
       }),
       signal: controller.signal,
+      // 웹뷰에서 네트워크 요청 허용
+      mode: 'cors',
+      credentials: 'omit',
     });
 
     clearTimeout(timeoutId);
@@ -45,6 +67,12 @@ export const generateStory = async (basicInfo, scenario) => {
       error.status = response.status;
       error.userMessage = errorData.message; // 사용자 친화적 메시지
       error.details = errorData.details; // 상세 에러 정보
+      console.error('❌ API 응답 에러:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorData,
+        environmentInfo,
+      });
       throw error;
     }
 
@@ -53,24 +81,40 @@ export const generateStory = async (basicInfo, scenario) => {
     return data;
   } catch (error) {
     clearTimeout(timeoutId);
-    console.error('❌ API 호출 실패:', {
+    
+    // 상세한 에러 정보 로깅
+    const errorDetails = {
       error: error.message,
       name: error.name,
       url: `${API_BASE_URL}/generate-story`,
       apiBaseUrl: API_BASE_URL,
-    });
+      environmentInfo,
+      stack: error.stack,
+    };
+    
+    // 네트워크 에러인 경우 추가 정보 수집
+    if (error instanceof TypeError || error.name === 'NetworkError' || error.message.includes('fetch')) {
+      errorDetails.networkError = true;
+      errorDetails.navigatorOnline = navigator.onLine;
+      errorDetails.navigatorConnection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      console.error('❌ 네트워크 에러 상세:', errorDetails);
+    } else {
+      console.error('❌ API 호출 실패:', errorDetails);
+    }
     
     // 타임아웃 에러 처리
-    if (error.name === 'AbortError') {
+    if (error.name === 'AbortError' || error.name === 'TimeoutError') {
       const timeoutError = new Error('Request timeout');
       timeoutError.name = 'TimeoutError';
+      timeoutError.userMessage = '응답 시간이 초과되었습니다. 네트워크 연결을 확인해주세요.';
       throw timeoutError;
     }
     
     // 네트워크 에러 처리
-    if (error instanceof TypeError && error.message.includes('fetch')) {
+    if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
       const networkError = new Error('Network error');
       networkError.name = 'NetworkError';
+      networkError.userMessage = '네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요.';
       throw networkError;
     }
     

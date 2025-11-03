@@ -35,10 +35,11 @@ export const BasicInfoPage = () => {
   };
 
   const handleBack = () => {
-    navigate('/');
+    navigate('/if-start');
   };
 
   const handleNext = () => {
+    // 시나리오 입력 페이지로 이동 (해당 페이지에서 광고 로드 시작)
     navigate('/scenario');
   };
 
