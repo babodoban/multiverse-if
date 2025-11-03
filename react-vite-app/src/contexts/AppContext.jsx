@@ -7,6 +7,8 @@ const ERROR_MESSAGES = {
   NETWORK_ERROR: '네트워크 연결을 확인해주세요.',
   API_ERROR: '이야기 생성에 실패했습니다. 잠시 후 다시 시도해주세요.',
   TIMEOUT_ERROR: '응답 시간이 초과되었습니다. 다시 시도해주세요.',
+  QUOTA_ERROR: 'OpenAI API 할당량이 초과되었습니다. 관리자에게 문의해주세요.',
+  AUTH_ERROR: 'OpenAI API 인증에 실패했습니다. 관리자에게 문의해주세요.',
   UNKNOWN_ERROR: '알 수 없는 오류가 발생했습니다.',
 };
 
@@ -178,7 +180,17 @@ export const AppProvider = ({ children }) => {
       
       // 에러 타입에 따른 메시지 설정
       let errorMessage = ERROR_MESSAGES.UNKNOWN_ERROR;
-      if (error.message.includes('fetch') || error.message.includes('network')) {
+      
+      // 백엔드에서 전달된 사용자 친화적 메시지 우선 사용
+      if (error.userMessage) {
+        errorMessage = error.userMessage;
+      }
+      // 상태 코드 기반 에러 처리
+      else if (error.status === 429 || error.message.includes('429') || error.message.includes('quota')) {
+        errorMessage = ERROR_MESSAGES.QUOTA_ERROR;
+      } else if (error.status === 401 || error.message.includes('401') || error.message.includes('authentication')) {
+        errorMessage = ERROR_MESSAGES.AUTH_ERROR;
+      } else if (error.message.includes('fetch') || error.message.includes('network')) {
         errorMessage = ERROR_MESSAGES.NETWORK_ERROR;
       } else if (error.message.includes('timeout')) {
         errorMessage = ERROR_MESSAGES.TIMEOUT_ERROR;

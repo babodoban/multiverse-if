@@ -221,10 +221,49 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Error generating story:', error);
     
+    // OpenAI API 에러 타입별 처리
+    let statusCode = 500;
+    let errorMessage = 'Failed to generate story';
+    let userMessage = '이야기 생성에 실패했습니다. 잠시 후 다시 시도해주세요.';
+    
+    if (error.response) {
+      // OpenAI API 응답 에러
+      const status = error.response.status;
+      const errorData = error.response.data || error.response.error || {};
+      
+      if (status === 429) {
+        statusCode = 429;
+        errorMessage = 'OpenAI API quota exceeded';
+        userMessage = 'OpenAI API 할당량이 초과되었습니다. 관리자에게 문의해주세요.';
+      } else if (status === 401) {
+        statusCode = 401;
+        errorMessage = 'OpenAI API authentication failed';
+        userMessage = 'OpenAI API 인증에 실패했습니다. 관리자에게 문의해주세요.';
+      } else if (status === 400) {
+        statusCode = 400;
+        errorMessage = 'OpenAI API bad request';
+        userMessage = '요청 형식이 올바르지 않습니다.';
+      } else {
+        statusCode = status;
+        errorMessage = `OpenAI API error: ${errorData.message || error.message}`;
+        userMessage = 'OpenAI API 호출에 실패했습니다. 잠시 후 다시 시도해주세요.';
+      }
+    } else if (error.message) {
+      // 일반 에러
+      if (error.message.includes('429') || error.message.includes('quota')) {
+        statusCode = 429;
+        errorMessage = 'OpenAI API quota exceeded';
+        userMessage = 'OpenAI API 할당량이 초과되었습니다. 관리자에게 문의해주세요.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     // 에러 응답에도 CORS 헤더 포함 (이미 함수 시작 부분에서 설정됨)
-    res.status(500).json({
-      error: 'Failed to generate story',
-      message: error.message,
+    res.status(statusCode).json({
+      error: errorMessage,
+      message: userMessage,
+      details: error.message,
     });
     return;
   }

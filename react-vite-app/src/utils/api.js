@@ -41,8 +41,10 @@ export const generateStory = async (basicInfo, scenario) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const error = new Error(errorData.message || `API request failed: ${response.statusText}`);
+      const error = new Error(errorData.message || errorData.error || `API request failed: ${response.statusText}`);
       error.status = response.status;
+      error.userMessage = errorData.message; // 사용자 친화적 메시지
+      error.details = errorData.details; // 상세 에러 정보
       throw error;
     }
 
