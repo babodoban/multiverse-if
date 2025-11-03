@@ -52,8 +52,18 @@ export default async function handler(req, res) {
       // referer에서 origin 추출 (필요시)
       let originToCheck = origin;
       if (origin.startsWith('http')) {
-        const originUrl = new URL(origin);
-        originToCheck = `${originUrl.protocol}//${originUrl.host}`;
+        try {
+          const originUrl = new URL(origin);
+          originToCheck = `${originUrl.protocol}//${originUrl.host}`;
+          // port가 있으면 포함
+          if (originUrl.port) {
+            originToCheck = `${originUrl.protocol}//${originUrl.host}:${originUrl.port}`;
+          }
+        } catch (e) {
+          // URL 파싱 실패 시 원본 origin 사용
+          console.log(`[CORS] URL 파싱 시도 실패, 원본 사용: ${origin}`);
+          originToCheck = origin;
+        }
       }
       
       // 1. 정확히 일치하는 출처 확인
@@ -68,9 +78,16 @@ export default async function handler(req, res) {
         console.log(`[CORS] ✅ 로컬 개발 환경 일치: ${origin} -> ${allowedOrigin}`);
       }
       // 3. Vercel preview 배포 패턴 확인 (모든 multiverse-if 관련 vercel.app 도메인)
-      else if (originToCheck.includes('multiverse-if') && originToCheck.includes('.vercel.app')) {
+      // origin이 'multiverse-if'를 포함하고 '.vercel.app'을 포함하는 경우 모두 허용
+      // 예: https://multiverse-if-dpf1.vercel.app, https://multiverse-if-abc123.vercel.app 등
+      const isVercelPreview = 
+        (originToCheck && originToCheck.includes('multiverse-if') && originToCheck.includes('.vercel.app')) ||
+        (origin && origin.includes('multiverse-if') && origin.includes('.vercel.app'));
+      
+      if (isVercelPreview) {
         // Vercel preview URL 허용 (multiverse-if가 포함된 모든 vercel.app 도메인)
-        allowedOrigin = originToCheck;
+        // 원본 origin을 그대로 사용 (브라우저가 요청한 정확한 origin)
+        allowedOrigin = origin;
         console.log(`[CORS] ✅ Vercel preview 일치: ${origin} -> ${allowedOrigin}`);
       }
       // 4. 파일 프로토콜 또는 null origin (앱 웹뷰)
@@ -101,8 +118,8 @@ export default async function handler(req, res) {
         // 로컬 개발 환경 허용
         allowedOrigin = origin;
         console.log(`[CORS] ✅ 로컬 개발 환경 일치 (파싱 실패 후): ${origin}`);
-      } else if (origin && origin.includes('multiverse-if') && origin.includes('.vercel.app')) {
-        // Vercel preview URL 허용
+      } else if (origin && (origin.includes('multiverse-if') && origin.includes('.vercel.app'))) {
+        // Vercel preview URL 허용 (파싱 실패 후에도 체크)
         allowedOrigin = origin;
         console.log(`[CORS] ✅ Vercel preview 일치 (파싱 실패 후): ${origin}`);
       } else if (origin === 'null' || !origin || origin === 'file://') {
@@ -144,6 +161,7 @@ export default async function handler(req, res) {
   // OPTIONS 요청 (Preflight) 처리 - 가장 먼저 처리
   if (req.method === 'OPTIONS') {
     console.log(`[CORS] OPTIONS 요청 처리: origin=${origin}, allowedOrigin=${corsOrigin}`);
+    console.log(`[CORS] OPTIONS CORS 헤더:`, corsHeaders);
     // 명시적으로 헤더 다시 설정
     res.writeHead(200, corsHeaders);
     res.end();
