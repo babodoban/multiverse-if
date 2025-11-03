@@ -26,6 +26,14 @@ export default async function handler(req, res) {
   const origin = req.headers.origin || req.headers.referer;
   let allowedOrigin = null;
 
+  // 디버깅: 모든 헤더 로깅
+  console.log('[CORS] 요청 정보:', {
+    method: req.method,
+    origin: req.headers.origin,
+    referer: req.headers.referer,
+    headers: Object.keys(req.headers),
+  });
+
   // 출처가 허용 목록에 있는지 확인
   if (origin) {
     try {
@@ -39,36 +47,42 @@ export default async function handler(req, res) {
       // 1. 정확히 일치하는 출처 확인
       if (allowedOrigins.includes(originToCheck) || allowedOrigins.includes(origin)) {
         allowedOrigin = originToCheck || origin;
-        console.log(`[CORS] 정확 일치: ${origin} -> ${allowedOrigin}`);
+        console.log(`[CORS] ✅ 정확 일치: ${origin} -> ${allowedOrigin}`);
       }
-      // 2. Vercel preview 배포 패턴 확인 (multiverse-if-*.vercel.app)
+      // 2. Vercel preview 배포 패턴 확인 (모든 multiverse-if 관련 vercel.app 도메인)
       else if (originToCheck.includes('multiverse-if') && originToCheck.includes('.vercel.app')) {
-        // Vercel preview URL 허용
+        // Vercel preview URL 허용 (multiverse-if가 포함된 모든 vercel.app 도메인)
         allowedOrigin = originToCheck;
-        console.log(`[CORS] Vercel preview 일치: ${origin} -> ${allowedOrigin}`);
+        console.log(`[CORS] ✅ Vercel preview 일치: ${origin} -> ${allowedOrigin}`);
       }
       // 3. 전체 origin 문자열이 목록에 있는 경우
       else if (allowedOrigins.includes(origin)) {
         allowedOrigin = origin;
-        console.log(`[CORS] 전체 문자열 일치: ${origin}`);
+        console.log(`[CORS] ✅ 전체 문자열 일치: ${origin}`);
       }
       // 매칭 실패
       else {
-        console.log(`[CORS] 출처 허용 실패: ${origin} (originToCheck: ${originToCheck})`);
+        console.log(`[CORS] ❌ 출처 허용 실패: ${origin} (originToCheck: ${originToCheck})`);
+        console.log(`[CORS] 허용 목록:`, allowedOrigins);
+        console.log(`[CORS] multiverse-if 포함: ${originToCheck.includes('multiverse-if')}`);
+        console.log(`[CORS] vercel.app 포함: ${originToCheck.includes('.vercel.app')}`);
       }
     } catch (e) {
-      console.error(`[CORS] URL 파싱 실패: ${origin}`, e);
+      console.error(`[CORS] ❌ URL 파싱 실패: ${origin}`, e);
       // URL 파싱 실패 시 origin 문자열 그대로 비교
       if (allowedOrigins.includes(origin)) {
         allowedOrigin = origin;
+        console.log(`[CORS] ✅ 전체 문자열 일치 (파싱 실패 후): ${origin}`);
       } else if (origin && origin.includes('multiverse-if') && origin.includes('.vercel.app')) {
         // Vercel preview URL 허용
         allowedOrigin = origin;
-        console.log(`[CORS] Vercel preview 일치 (파싱 실패 후): ${origin}`);
+        console.log(`[CORS] ✅ Vercel preview 일치 (파싱 실패 후): ${origin}`);
+      } else {
+        console.log(`[CORS] ❌ 매칭 실패 (파싱 실패): ${origin}`);
       }
     }
   } else {
-    console.log('[CORS] Origin 헤더가 없습니다.');
+    console.log('[CORS] ⚠️ Origin 헤더가 없습니다.');
   }
 
   // CORS 헤더 설정 (매칭된 출처 또는 요청한 출처, 또는 기본값)
