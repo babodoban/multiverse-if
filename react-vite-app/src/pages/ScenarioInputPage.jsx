@@ -10,6 +10,7 @@ export const ScenarioInputPage = () => {
   const [localScenario, setLocalScenario] = useState({
     importantMoment: scenario.importantMoment || '',
     alternativeChoice: scenario.alternativeChoice || '',
+    thoughtAtThatTime: scenario.thoughtAtThatTime || '',
   });
 
   const handleInputChange = (field, value) => {
@@ -58,6 +59,18 @@ export const ScenarioInputPage = () => {
             value={localScenario.alternativeChoice}
             onChange={(e) => handleInputChange('alternativeChoice', e.target.value)}
             rows={6}
+          />
+        </div>
+
+        {/* 그 때 생각 한 줄 */}
+        <div className="input-group">
+          <label className="input-label">그 때 생각 한 줄</label>
+          <input
+            type="text"
+            className="text-input"
+            placeholder="그 떄 어떤 생각했나요 (예시. 긴장되었다)"
+            value={localScenario.thoughtAtThatTime}
+            onChange={(e) => handleInputChange('thoughtAtThatTime', e.target.value)}
           />
         </div>
       </div>

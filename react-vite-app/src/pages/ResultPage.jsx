@@ -8,13 +8,19 @@ export const ResultPage = () => {
   const { resultInfo, resetScenario } = useAppContext();
   const textareaRef = useRef(null);
 
+  const messageTextareaRef = useRef(null);
+
   useEffect(() => {
     if (textareaRef.current) {
       // 내용에 맞춰 높이 자동 조정
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
-  }, [resultInfo.story]);
+    if (messageTextareaRef.current) {
+      messageTextareaRef.current.style.height = 'auto';
+      messageTextareaRef.current.style.height = `${messageTextareaRef.current.scrollHeight}px`;
+    }
+  }, [resultInfo.story, resultInfo.message]);
 
   const handleRestart = () => {
     resetScenario(); // 시나리오만 초기화 (기본정보는 유지)
@@ -23,7 +29,7 @@ export const ResultPage = () => {
 
   const handleShare = () => {
     // 공유 기능 구현
-    const shareText = `직업: ${resultInfo.job}\n위치: ${resultInfo.location}\n연애상태: ${resultInfo.relationship}\n\n${resultInfo.story}`;
+    const shareText = `멀티버스 이름: ${resultInfo.multiverseName}\n한 줄 요약: ${resultInfo.summary}\n키워드: ${resultInfo.keywords}\n직업: ${resultInfo.job}\n위치: ${resultInfo.location}\n연애상태: ${resultInfo.relationship}\n\n또 다른 나의 이야기:\n${resultInfo.story}\n\n내가 나에게 전하는 이야기:\n${resultInfo.message}`;
     
     if (navigator.share) {
       navigator.share({
@@ -49,6 +55,39 @@ export const ResultPage = () => {
 
       {/* 콘텐츠 섹션 */}
       <div className="form-section">
+        {/* 멀티버스 이름 */}
+        <div className="input-group">
+          <label className="input-label">멀티버스 이름</label>
+          <input
+            type="text"
+            className="display-input"
+            value={resultInfo.multiverseName}
+            readOnly
+          />
+        </div>
+
+        {/* 한 줄 요약 */}
+        <div className="input-group">
+          <label className="input-label">한 줄 요약</label>
+          <input
+            type="text"
+            className="display-input"
+            value={resultInfo.summary}
+            readOnly
+          />
+        </div>
+
+        {/* 키워드 */}
+        <div className="input-group">
+          <label className="input-label">키워드</label>
+          <input
+            type="text"
+            className="display-input"
+            value={resultInfo.keywords}
+            readOnly
+          />
+        </div>
+
         {/* 직업 */}
         <div className="input-group">
           <label className="input-label">직업</label>
@@ -89,6 +128,17 @@ export const ResultPage = () => {
             ref={textareaRef}
             className="display-textarea"
             value={resultInfo.story}
+            readOnly
+          />
+        </div>
+
+        {/* 내가 나에게 전하는 이야기 */}
+        <div className="input-group">
+          <label className="input-label">내가 나에게 전하는 이야기</label>
+          <textarea
+            ref={messageTextareaRef}
+            className="display-textarea"
+            value={resultInfo.message}
             readOnly
           />
         </div>

@@ -13,6 +13,7 @@ export const BasicInfoPage = () => {
     interests: basicInfo.interests || '',
     relationship: basicInfo.relationship || '',
     children: basicInfo.children || '',
+    summary: basicInfo.summary || '',
   });
 
   const handleInputChange = (field, value) => {
@@ -90,6 +91,18 @@ export const BasicInfoPage = () => {
             placeholder="현재 관심사들을 입력하세요 (예시. 영화, 음악)"
             value={localInfo.interests}
             onChange={(e) => handleInputChange('interests', e.target.value)}
+          />
+        </div>
+
+        {/* 나를 한 줄 요약 */}
+        <div className="input-group">
+          <label className="input-label">나를 한 줄 요약</label>
+          <input
+            type="text"
+            className="text-input"
+            placeholder="나를 간단하게 설명해주세요 (예시. 호기심이 많다)"
+            value={localInfo.summary}
+            onChange={(e) => handleInputChange('summary', e.target.value)}
           />
         </div>
 

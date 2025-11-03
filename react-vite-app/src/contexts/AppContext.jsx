@@ -30,11 +30,13 @@ export const AppProvider = ({ children }) => {
     interests: '',
     relationship: '',
     children: '',
+    summary: '',
   });
 
   const [scenario, setScenario] = useState({
     importantMoment: '',
     alternativeChoice: '',
+    thoughtAtThatTime: '',
   });
 
   const [generatedStory, setGeneratedStory] = useState('');
@@ -43,6 +45,10 @@ export const AppProvider = ({ children }) => {
     location: '',
     relationship: '',
     story: '',
+    multiverseName: '',
+    summary: '',
+    keywords: '',
+    message: '',
   });
 
   const [loadingState, setLoadingState] = useState({
@@ -72,6 +78,7 @@ export const AppProvider = ({ children }) => {
     setScenario({
       importantMoment: '',
       alternativeChoice: '',
+      thoughtAtThatTime: '',
     });
     setGeneratedStory('');
     setResultInfo({
@@ -79,6 +86,10 @@ export const AppProvider = ({ children }) => {
       location: '',
       relationship: '',
       story: '',
+      multiverseName: '',
+      summary: '',
+      keywords: '',
+      message: '',
     });
   };
 
@@ -92,6 +103,10 @@ export const AppProvider = ({ children }) => {
         location: cached.location || '',
         relationship: cached.relationship || basicInfo.relationship || '',
         story: cached.story || '',
+        multiverseName: cached.multiverseName || '',
+        summary: cached.summary || '',
+        keywords: cached.keywords || '',
+        message: cached.message || '',
       });
       return cached.story;
     }
@@ -127,6 +142,10 @@ export const AppProvider = ({ children }) => {
         location: result.location || '',
         relationship: result.relationship || basicInfo.relationship || '',
         story: result.story || '',
+        multiverseName: result.multiverseName || '',
+        summary: result.summary || '',
+        keywords: result.keywords || '',
+        message: result.message || '',
       });
 
       // 캐시에 저장
@@ -135,6 +154,10 @@ export const AppProvider = ({ children }) => {
         location: result.location || '',
         relationship: result.relationship || basicInfo.relationship || '',
         story: result.story || '',
+        multiverseName: result.multiverseName || '',
+        summary: result.summary || '',
+        keywords: result.keywords || '',
+        message: result.message || '',
       });
 
       // 로딩 종료
@@ -181,6 +204,10 @@ export const AppProvider = ({ children }) => {
         location: mockLocation,
         relationship: `${basicInfo.relationship ? `같은 예술가인 파트너와 함께 창작 활동을 하며 2년째 ${mockRelationship}` : mockRelationship}`,
         story: mockStory,
+        multiverseName: '파리 아티스트 버전',
+        summary: '자유로운 예술가의 삶',
+        keywords: '창작, 자유, 예술',
+        message: '선택의 순간이 당신을 여기로 이끌었습니다.',
       });
       
       return mockStory;
