@@ -14,11 +14,60 @@ const openai = new OpenAI({
 });
 
 export default async function handler(req, res) {
-  // CORS 설정
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // 허용된 출처 목록
+  const allowedOrigins = [
+    'https://multiverse-if.vercel.app',
+    'https://multiverse-if.apps.tossmini.com',
+    'https://multiverse-if.private-apps.tossmini.com',
+    'http://172.30.1.14:5713',
+  ];
 
+  // 요청 출처 확인
+  const origin = req.headers.origin || req.headers.referer;
+  let allowedOrigin = null;
+
+  // 출처가 허용 목록에 있는지 확인
+  if (origin) {
+    // URL에서 origin 부분만 추출 (protocol + host + port)
+    try {
+      const originUrl = new URL(origin);
+      const originWithoutPath = `${originUrl.protocol}//${originUrl.host}`;
+      
+      // 포트가 있는 경우 (172.30.1.14:5713 같은 경우)
+      const originWithPort = originUrl.port 
+        ? `${originUrl.protocol}//${originUrl.hostname}:${originUrl.port}`
+        : originWithoutPath;
+      
+      // 허용 목록과 정확히 일치하는지 확인 (포트 포함/미포함 모두 체크)
+      if (allowedOrigins.includes(originWithoutPath) || allowedOrigins.includes(originWithPort)) {
+        allowedOrigin = originWithPort || originWithoutPath;
+      } else if (allowedOrigins.includes(origin)) {
+        // 전체 origin 문자열이 목록에 있는 경우
+        allowedOrigin = origin;
+      }
+    } catch (e) {
+      // URL 파싱 실패 시 origin 문자열 그대로 비교
+      if (allowedOrigins.includes(origin)) {
+        allowedOrigin = origin;
+      }
+    }
+  }
+
+  // CORS 헤더 설정
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': allowedOrigin || allowedOrigins[0], // 기본값: 첫 번째 허용 출처
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400', // 24시간
+    'Access-Control-Allow-Credentials': 'true', // 필요시 쿠키 포함 가능
+  };
+
+  // 모든 응답에 CORS 헤더 추가
+  Object.keys(corsHeaders).forEach((key) => {
+    res.setHeader(key, corsHeaders[key]);
+  });
+
+  // OPTIONS 요청 (Preflight) 처리
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -29,12 +78,19 @@ export default async function handler(req, res) {
     return;
   }
 
+  // req.body 파싱 (Vercel에서는 자동 파싱되지만 명시적으로 확인)
+  if (!req.body) {
+    res.status(400).json({ error: 'Request body is missing' });
+    return;
+  }
+
   try {
     const { basicInfo, scenario } = req.body || {};
 
     // 입력 검증
     if (!basicInfo || !scenario) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      res.status(400).json({ error: 'Missing required fields' });
+      return;
     }
 
     // ========================================
@@ -127,9 +183,12 @@ export default async function handler(req, res) {
     res.status(200).json(formattedResult);
   } catch (error) {
     console.error('Error generating story:', error);
+    
+    // 에러 응답에도 CORS 헤더 포함 (이미 함수 시작 부분에서 설정됨)
     res.status(500).json({
       error: 'Failed to generate story',
       message: error.message,
     });
+    return;
   }
 }

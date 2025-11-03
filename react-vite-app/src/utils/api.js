@@ -1,8 +1,8 @@
 // API 기본 URL 설정
 // 개발 환경: 로컬 Vercel 개발 서버 또는 배포된 서버리스 함수
 // 프로덕션: 실제 배포된 API URL
-// Vercel 배포 후 백엔드 URL: https://multiverse-if.vercel.app/api
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://multiverse-if.vercel.app/api';
+// 실제 백엔드 URL: https://multiverse-if-backend.vercel.app/api
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://multiverse-if-backend.vercel.app/api';
 
 // 타임아웃 설정 (30초)
 const TIMEOUT = 30000;
