@@ -263,7 +263,7 @@ export const LoadingPage = () => {
         {/* 로딩 텍스트 */}
         <div className="loading-text">
           <p className="loading-line-1">다른 멀티버스에 있는</p>
-          <p className="loading-line-2">나는 찾고 있습니다</p>
+          <p className="loading-line-2">나를 찾고 있습니다</p>
         </div>
 
         {/* 응답 시간 표시 */}

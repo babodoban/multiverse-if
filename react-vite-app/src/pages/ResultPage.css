@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   padding: 0 16px;
-  padding-bottom: 100px;
+  padding-bottom: 160px; /* 하단 버튼 영역보다 충분히 위에 위치하도록 여백 증가 */
 }
 
 /* 상단 타이틀 */
@@ -30,6 +30,7 @@
   flex-direction: column;
   gap: 24px;
   flex: 1;
+  padding-bottom: 24px; /* 마지막 항목과 하단 버튼 사이 여백 추가 */
 }
 
 .input-group {
