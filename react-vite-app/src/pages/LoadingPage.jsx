@@ -5,18 +5,32 @@ import './LoadingPage.css';
 
 export const LoadingPage = () => {
   const navigate = useNavigate();
-  const { generateStory, loadingState, clearError } = useAppContext();
+  const { generateStory, loadingState, clearError, resultInfo } = useAppContext();
 
   useEffect(() => {
     const loadStory = async () => {
-      await generateStory();
-      // 광고 시청 단계는 여기에 구현 가능
-      // API 응답 후 광고 시청 → navigate('/result')
-      navigate('/result');
+      try {
+        await generateStory();
+        // 성공 시 결과 페이지로 이동 (다른 useEffect에서 처리)
+      } catch (error) {
+        // 에러는 이미 AppContext에서 처리되어 loadingState.error에 설정됨
+        // 로딩 화면에서 에러 메시지가 표시되므로 여기서는 추가 처리 불필요
+        // 결과 페이지로 이동하지 않고 로딩 화면에 머물러 에러 표시
+        console.error('스토리 생성 실패:', error);
+      }
     };
 
     loadStory();
-  }, [generateStory, navigate]);
+  }, [generateStory]);
+
+  // 에러가 없고 로딩이 완료되었을 때만 결과 페이지로 이동
+  useEffect(() => {
+    if (!loadingState.isLoading && !loadingState.error && resultInfo.story) {
+      // 광고 시청 단계는 여기에 구현 가능
+      // API 응답 후 광고 시청 → navigate('/result')
+      navigate('/result');
+    }
+  }, [loadingState.isLoading, loadingState.error, resultInfo.story, navigate]);
 
   // 에러가 발생했을 때 처리
   useEffect(() => {

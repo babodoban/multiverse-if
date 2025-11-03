@@ -1,8 +1,8 @@
 // API 기본 URL 설정
 // 개발 환경: 로컬 Vercel 개발 서버 또는 배포된 서버리스 함수
 // 프로덕션: 실제 배포된 API URL
-// Vercel 배포 후: https://your-backend-project.vercel.app/api
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://your-backend-project.vercel.app/api';
+// Vercel 배포 후 백엔드 URL: https://multiverse-if.vercel.app/api
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://multiverse-if.vercel.app/api';
 
 // 타임아웃 설정 (30초)
 const TIMEOUT = 30000;
@@ -16,6 +16,13 @@ const TIMEOUT = 30000;
 export const generateStory = async (basicInfo, scenario) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
+
+  // 디버깅: API URL 로그
+  console.log('🚀 API 호출 시작:', {
+    url: `${API_BASE_URL}/generate-story`,
+    basicInfo,
+    scenario,
+  });
 
   try {
     const response = await fetch(`${API_BASE_URL}/generate-story`, {
@@ -40,10 +47,16 @@ export const generateStory = async (basicInfo, scenario) => {
     }
 
     const data = await response.json();
+    console.log('✅ API 응답 성공:', data);
     return data;
   } catch (error) {
     clearTimeout(timeoutId);
-    console.error('Failed to generate story:', error);
+    console.error('❌ API 호출 실패:', {
+      error: error.message,
+      name: error.name,
+      url: `${API_BASE_URL}/generate-story`,
+      apiBaseUrl: API_BASE_URL,
+    });
     
     // 타임아웃 에러 처리
     if (error.name === 'AbortError') {

@@ -94,22 +94,23 @@ export const AppProvider = ({ children }) => {
   };
 
   const generateStory = useCallback(async () => {
-    // 캐시 확인
-    const cached = storage.loadCache(basicInfo, scenario);
-    if (cached) {
-      setGeneratedStory(cached.story);
-      setResultInfo({
-        job: cached.job || basicInfo.job || '',
-        location: cached.location || '',
-        relationship: cached.relationship || basicInfo.relationship || '',
-        story: cached.story || '',
-        multiverseName: cached.multiverseName || '',
-        summary: cached.summary || '',
-        keywords: cached.keywords || '',
-        message: cached.message || '',
-      });
-      return cached.story;
-    }
+    // 캐시 확인 (개발 중에는 캐시 사용 안 함 - 주석 처리)
+    // const cached = storage.loadCache(basicInfo, scenario);
+    // if (cached) {
+    //   console.log('📦 캐시에서 데이터 로드');
+    //   setGeneratedStory(cached.story);
+    //   setResultInfo({
+    //     job: cached.job || basicInfo.job || '',
+    //     location: cached.location || '',
+    //     relationship: cached.relationship || basicInfo.relationship || '',
+    //     story: cached.story || '',
+    //     multiverseName: cached.multiverseName || '',
+    //     summary: cached.summary || '',
+    //     keywords: cached.keywords || '',
+    //     message: cached.message || '',
+    //   });
+    //   return cached.story;
+    // }
 
     // 로딩 시작
     const startTime = Date.now();
@@ -193,24 +194,10 @@ export const AppProvider = ({ children }) => {
         error: errorMessage,
       });
 
-      // 에러 발생 시 모의 데이터 반환 (폴백)
-      const mockLocation = '프랑스, 파리';
-      const mockRelationship = basicInfo.relationship || '연애중';
-      const mockStory = `당신은 파리의 작은 아틀리에에서 매일 아침 커피 한 잔과 함께 하루를 시작합니다. 세느강을 바라보며 그림을 그리는 것이 일상이 되었고, 작은 갤러리에서 첫 개인전을 성공적으로 마쳤습니다. 예술가들과의 모임에서 영감을 받으며, 때로는 거리에서 즉흥적으로 스케치를 하는 자유로운 삶을 살고 있습니다. 물질적으로는 풍요롭지 않지만, 매일 매일이 새로운 창작의 기회가 되는 충만한 인생을 보내고 있습니다.`;
-      
-      setGeneratedStory(mockStory);
-      setResultInfo({
-        job: basicInfo.job || '여행블로거',
-        location: mockLocation,
-        relationship: `${basicInfo.relationship ? `같은 예술가인 파트너와 함께 창작 활동을 하며 2년째 ${mockRelationship}` : mockRelationship}`,
-        story: mockStory,
-        multiverseName: '파리 아티스트 버전',
-        summary: '자유로운 예술가의 삶',
-        keywords: '창작, 자유, 예술',
-        message: '선택의 순간이 당신을 여기로 이끌었습니다.',
-      });
-      
-      return mockStory;
+      // 에러 발생 시 더미 데이터 반환하지 않고 에러만 표시
+      // (로딩 화면에서 에러 메시지가 표시되도록)
+      // 사용자가 직접 재시도할 수 있도록 함
+      throw error;
     }
   }, [basicInfo, scenario]);
 
