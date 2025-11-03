@@ -14,21 +14,21 @@ const openai = new OpenAI({
 });
 
 export default async function handler(req, res) {
-  // 모든 응답에 CORS 헤더를 먼저 설정 (OPTIONS preflight 요청 처리 전)
   // Vercel preview URL 패턴 매칭 함수
   const isVercelPreviewUrl = (url) => {
     if (!url) return false;
     return url.includes('multiverse-if') && url.includes('.vercel.app');
   };
 
-  // 요청 출처 확인 (여러 소스에서 확인)
-  const origin = req.headers.origin || req.headers.referer || req.headers['x-forwarded-host'] || '';
+  // 요청 출처 확인 (origin 헤더 우선 확인)
+  const origin = req.headers.origin || req.headers.referer || '';
   
   // CORS 허용 origin 결정
-  let allowedOrigin = null;
+  let allowedOrigin = '*'; // 기본값을 *로 설정 (더 안전한 fallback)
   
-  if (origin) {
+  if (origin && origin !== 'null' && origin !== 'file://') {
     // 1. Vercel preview URL인 경우 허용 (가장 먼저 체크)
+    // 예: https://multiverse-if-dpf1.vercel.app (프론트엔드 preview URL)
     if (isVercelPreviewUrl(origin)) {
       allowedOrigin = origin;
       console.log(`[CORS] ✅ Vercel preview URL 허용: ${origin}`);
@@ -39,6 +39,7 @@ export default async function handler(req, res) {
       console.log(`[CORS] ✅ 로컬 개발 환경 허용: ${origin}`);
     }
     // 3. 허용된 출처 목록 (정확히 일치)
+    // https://multiverse-if.vercel.app = 프로덕션 프론트엔드 URL
     else if ([
       'https://multiverse-if.vercel.app',
       'https://multiverse-if.apps.tossmini.com',
@@ -47,16 +48,15 @@ export default async function handler(req, res) {
       allowedOrigin = origin;
       console.log(`[CORS] ✅ 허용된 출처 일치: ${origin}`);
     }
-    // 4. null origin (앱 웹뷰)
-    else if (origin === 'null' || origin === 'file://') {
-      allowedOrigin = '*';
-      console.log(`[CORS] ✅ 앱 웹뷰 환경 허용: ${origin} -> *`);
-    }
-    // 5. 알 수 없는 출처도 일단 허용 (개발 중 안전을 위해)
+    // 4. 알 수 없는 출처도 일단 허용 (개발 중 안전을 위해)
     else {
       console.log(`[CORS] ⚠️ 알 수 없는 출처이지만 허용: ${origin}`);
       allowedOrigin = origin;
     }
+  } else if (origin === 'null' || origin === 'file://') {
+    // null origin (앱 웹뷰)
+    allowedOrigin = '*';
+    console.log(`[CORS] ✅ 앱 웹뷰 환경 허용: ${origin || 'null'} -> *`);
   } else {
     // Origin이 없으면 앱 웹뷰 환경일 가능성이 높음
     allowedOrigin = '*';
@@ -73,17 +73,11 @@ export default async function handler(req, res) {
     ...(useCredentials ? { 'Access-Control-Allow-Credentials': 'true' } : {}),
   };
 
-  // 모든 응답에 CORS 헤더 추가 (가장 먼저 - 모든 응답에 포함)
-  Object.keys(corsHeaders).forEach((key) => {
-    res.setHeader(key, corsHeaders[key]);
-  });
-
   // 디버깅: 요청 정보 로깅
   console.log('[CORS] 요청 정보:', {
     method: req.method,
     origin: req.headers.origin,
     referer: req.headers.referer,
-    xForwardedHost: req.headers['x-forwarded-host'],
     userAgent: req.headers['user-agent'],
     resolvedOrigin: origin,
     allowedOrigin: allowedOrigin,
@@ -94,11 +88,19 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     console.log(`[CORS] OPTIONS 요청 처리: origin=${origin}, allowedOrigin=${allowedOrigin}`);
     console.log(`[CORS] OPTIONS CORS 헤더:`, corsHeaders);
-    // 명시적으로 헤더 다시 설정
+    
+    // Vercel Serverless Functions에서 헤더 전송을 보장하기 위해 writeHead만 사용
+    // setHeader와 writeHead를 함께 사용하지 않음 (충돌 방지)
     res.writeHead(200, corsHeaders);
     res.end();
+    console.log(`[CORS] OPTIONS 응답 전송 완료`);
     return;
   }
+
+  // 모든 응답에 CORS 헤더 추가 (POST 요청 포함)
+  Object.keys(corsHeaders).forEach((key) => {
+    res.setHeader(key, corsHeaders[key]);
+  });
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
