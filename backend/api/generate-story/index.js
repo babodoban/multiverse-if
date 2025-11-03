@@ -14,153 +14,85 @@ const openai = new OpenAI({
 });
 
 export default async function handler(req, res) {
-  // 허용된 출처 목록 (정확히 일치)
-  const allowedOrigins = [
-    'https://multiverse-if.vercel.app',
-    'https://multiverse-if.apps.tossmini.com',
-    'https://multiverse-if.private-apps.tossmini.com',
-    'http://172.30.1.14:5713',
-    // 로컬 개발 환경
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:3000',
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:5174',
-    'http://127.0.0.1:3000',
-    // 파일 프로토콜 (앱 웹뷰에서 사용 가능)
-    'file://',
-    'null', // 웹뷰에서 origin이 null일 수 있음
-  ];
+  // 모든 응답에 CORS 헤더를 먼저 설정 (OPTIONS preflight 요청 처리 전)
+  // Vercel preview URL 패턴 매칭 함수
+  const isVercelPreviewUrl = (url) => {
+    if (!url) return false;
+    return url.includes('multiverse-if') && url.includes('.vercel.app');
+  };
 
-  // 요청 출처 확인
-  const origin = req.headers.origin || req.headers.referer;
+  // 요청 출처 확인 (여러 소스에서 확인)
+  const origin = req.headers.origin || req.headers.referer || req.headers['x-forwarded-host'] || '';
+  
+  // CORS 허용 origin 결정
   let allowedOrigin = null;
-
-  // 디버깅: 모든 헤더 로깅
-  console.log('[CORS] 요청 정보:', {
-    method: req.method,
-    origin: req.headers.origin,
-    referer: req.headers.referer,
-    userAgent: req.headers['user-agent'],
-    headers: Object.keys(req.headers),
-    allHeaders: req.headers, // 모든 헤더 출력 (디버깅용)
-  });
-
-  // 출처가 허용 목록에 있는지 확인
+  
   if (origin) {
-    try {
-      // referer에서 origin 추출 (필요시)
-      let originToCheck = origin;
-      if (origin.startsWith('http')) {
-        try {
-          const originUrl = new URL(origin);
-          originToCheck = `${originUrl.protocol}//${originUrl.host}`;
-          // port가 있으면 포함
-          if (originUrl.port) {
-            originToCheck = `${originUrl.protocol}//${originUrl.host}:${originUrl.port}`;
-          }
-        } catch (e) {
-          // URL 파싱 실패 시 원본 origin 사용
-          console.log(`[CORS] URL 파싱 시도 실패, 원본 사용: ${origin}`);
-          originToCheck = origin;
-        }
-      }
-      
-      // 1. 정확히 일치하는 출처 확인
-      if (allowedOrigins.includes(originToCheck) || allowedOrigins.includes(origin)) {
-        allowedOrigin = originToCheck || origin;
-        console.log(`[CORS] ✅ 정확 일치: ${origin} -> ${allowedOrigin}`);
-      }
-      // 2. 로컬 개발 환경 확인 (localhost, 127.0.0.1)
-      else if (originToCheck.includes('localhost') || originToCheck.includes('127.0.0.1')) {
-        // 로컬 개발 환경 허용
-        allowedOrigin = originToCheck;
-        console.log(`[CORS] ✅ 로컬 개발 환경 일치: ${origin} -> ${allowedOrigin}`);
-      }
-      // 3. Vercel preview 배포 패턴 확인 (모든 multiverse-if 관련 vercel.app 도메인)
-      // origin이 'multiverse-if'를 포함하고 '.vercel.app'을 포함하는 경우 모두 허용
-      // 예: https://multiverse-if-dpf1.vercel.app, https://multiverse-if-abc123.vercel.app 등
-      const isVercelPreview = 
-        (originToCheck && originToCheck.includes('multiverse-if') && originToCheck.includes('.vercel.app')) ||
-        (origin && origin.includes('multiverse-if') && origin.includes('.vercel.app'));
-      
-      if (isVercelPreview) {
-        // Vercel preview URL 허용 (multiverse-if가 포함된 모든 vercel.app 도메인)
-        // 원본 origin을 그대로 사용 (브라우저가 요청한 정확한 origin)
-        allowedOrigin = origin;
-        console.log(`[CORS] ✅ Vercel preview 일치: ${origin} -> ${allowedOrigin}`);
-      }
-      // 4. 파일 프로토콜 또는 null origin (앱 웹뷰)
-      else if (originToCheck === 'file://' || origin === 'null' || !origin) {
-        // 앱 웹뷰 환경에서는 origin이 없거나 null일 수 있음
-        allowedOrigin = origin || '*'; // null이면 * 사용
-        console.log(`[CORS] ✅ 앱 웹뷰 환경 허용: ${origin || 'null'} -> ${allowedOrigin}`);
-      }
-      // 5. 전체 origin 문자열이 목록에 있는 경우
-      else if (allowedOrigins.includes(origin)) {
-        allowedOrigin = origin;
-        console.log(`[CORS] ✅ 전체 문자열 일치: ${origin}`);
-      }
-      // 매칭 실패
-      else {
-        console.log(`[CORS] ❌ 출처 허용 실패: ${origin} (originToCheck: ${originToCheck})`);
-        console.log(`[CORS] 허용 목록:`, allowedOrigins);
-        console.log(`[CORS] multiverse-if 포함: ${originToCheck.includes('multiverse-if')}`);
-        console.log(`[CORS] vercel.app 포함: ${originToCheck.includes('.vercel.app')}`);
-      }
-    } catch (e) {
-      console.error(`[CORS] ❌ URL 파싱 실패: ${origin}`, e);
-      // URL 파싱 실패 시 origin 문자열 그대로 비교
-      if (allowedOrigins.includes(origin)) {
-        allowedOrigin = origin;
-        console.log(`[CORS] ✅ 전체 문자열 일치 (파싱 실패 후): ${origin}`);
-      } else if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
-        // 로컬 개발 환경 허용
-        allowedOrigin = origin;
-        console.log(`[CORS] ✅ 로컬 개발 환경 일치 (파싱 실패 후): ${origin}`);
-      } else if (origin && (origin.includes('multiverse-if') && origin.includes('.vercel.app'))) {
-        // Vercel preview URL 허용 (파싱 실패 후에도 체크)
-        allowedOrigin = origin;
-        console.log(`[CORS] ✅ Vercel preview 일치 (파싱 실패 후): ${origin}`);
-      } else if (origin === 'null' || !origin || origin === 'file://') {
-        // 앱 웹뷰 환경 처리 (파싱 실패 후에도 체크)
-        allowedOrigin = '*';
-        console.log(`[CORS] ✅ 앱 웹뷰 환경 허용 (파싱 실패 후): ${origin || 'null'} -> *`);
-      } else {
-        console.log(`[CORS] ❌ 매칭 실패 (파싱 실패): ${origin}`);
-      }
+    // 1. Vercel preview URL인 경우 허용 (가장 먼저 체크)
+    if (isVercelPreviewUrl(origin)) {
+      allowedOrigin = origin;
+      console.log(`[CORS] ✅ Vercel preview URL 허용: ${origin}`);
+    }
+    // 2. 로컬 개발 환경
+    else if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('172.30.1.14')) {
+      allowedOrigin = origin;
+      console.log(`[CORS] ✅ 로컬 개발 환경 허용: ${origin}`);
+    }
+    // 3. 허용된 출처 목록 (정확히 일치)
+    else if ([
+      'https://multiverse-if.vercel.app',
+      'https://multiverse-if.apps.tossmini.com',
+      'https://multiverse-if.private-apps.tossmini.com',
+    ].includes(origin)) {
+      allowedOrigin = origin;
+      console.log(`[CORS] ✅ 허용된 출처 일치: ${origin}`);
+    }
+    // 4. null origin (앱 웹뷰)
+    else if (origin === 'null' || origin === 'file://') {
+      allowedOrigin = '*';
+      console.log(`[CORS] ✅ 앱 웹뷰 환경 허용: ${origin} -> *`);
+    }
+    // 5. 알 수 없는 출처도 일단 허용 (개발 중 안전을 위해)
+    else {
+      console.log(`[CORS] ⚠️ 알 수 없는 출처이지만 허용: ${origin}`);
+      allowedOrigin = origin;
     }
   } else {
-    console.log('[CORS] ⚠️ Origin 헤더가 없습니다.');
     // Origin이 없으면 앱 웹뷰 환경일 가능성이 높음
     allowedOrigin = '*';
-    console.log('[CORS] ✅ Origin 없음 - 앱 웹뷰 환경으로 간주하여 * 허용');
+    console.log('[CORS] ⚠️ Origin 헤더가 없습니다. * 허용');
   }
 
-  // CORS 헤더 설정 (매칭된 출처 또는 요청한 출처, 또는 기본값)
-  // 앱 웹뷰 환경에서는 origin이 없거나 null일 수 있음
-  const corsOrigin = allowedOrigin || (origin && origin !== 'null' ? origin : '*') || '*';
-  
-  // Access-Control-Allow-Credentials가 true일 때는 *를 사용할 수 없으므로
-  // origin이 없거나 null인 경우 credentials를 false로 설정하거나 구체적인 origin 사용
-  const useCredentials = corsOrigin !== '*';
-  
+  // CORS 헤더 설정
+  const useCredentials = allowedOrigin !== '*';
   const corsHeaders = {
-    'Access-Control-Allow-Origin': corsOrigin,
+    'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400', // 24시간
     ...(useCredentials ? { 'Access-Control-Allow-Credentials': 'true' } : {}),
   };
 
-  // 모든 응답에 CORS 헤더 추가 (반드시 OPTIONS 처리 전에 설정)
+  // 모든 응답에 CORS 헤더 추가 (가장 먼저 - 모든 응답에 포함)
   Object.keys(corsHeaders).forEach((key) => {
     res.setHeader(key, corsHeaders[key]);
   });
 
+  // 디버깅: 요청 정보 로깅
+  console.log('[CORS] 요청 정보:', {
+    method: req.method,
+    origin: req.headers.origin,
+    referer: req.headers.referer,
+    xForwardedHost: req.headers['x-forwarded-host'],
+    userAgent: req.headers['user-agent'],
+    resolvedOrigin: origin,
+    allowedOrigin: allowedOrigin,
+    corsHeaders: corsHeaders,
+  });
+
   // OPTIONS 요청 (Preflight) 처리 - 가장 먼저 처리
   if (req.method === 'OPTIONS') {
-    console.log(`[CORS] OPTIONS 요청 처리: origin=${origin}, allowedOrigin=${corsOrigin}`);
+    console.log(`[CORS] OPTIONS 요청 처리: origin=${origin}, allowedOrigin=${allowedOrigin}`);
     console.log(`[CORS] OPTIONS CORS 헤더:`, corsHeaders);
     // 명시적으로 헤더 다시 설정
     res.writeHead(200, corsHeaders);
