@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
-import { GoogleAdMob } from '@apps-in-toss/web-framework';
+// GoogleAdMob은 정적 import하지 않음 (웹뷰 환경에서 에러 발생 가능)
+// 대신 동적 import로 안전하게 로드
+import { adStateStore } from '../utils/adStore';
 import './ScenarioInputPage.css';
 
-// 광고 그룹 ID (환경 변수 또는 하드코딩)
-const AD_GROUP_ID = import.meta.env.VITE_AD_GROUP_ID || '<AD_GROUP_ID>';
-
-// 광고 로드 상태를 전역적으로 공유하기 위한 간단한 스토어
-const adStateStore = {
-  adLoaded: false,
-  adCleanup: null,
-  isSupportedChecked: false, // isSupported 확인 여부 (중복 확인 방지)
+/** 광고 그룹 ID */
+const AD_GROUP_IDS = {
+  REWARDED: 'ait-ad-test-rewarded-id',      // 보상형 광고
+  INTERSTITIAL: 'ait-ad-test-interstitial-id',  // 전면형 광고
 };
 
 export const ScenarioInputPage = () => {
@@ -36,13 +34,23 @@ export const ScenarioInputPage = () => {
     navigate('/basic-info');
   };
 
-  // 광고 로드 함수
-  const loadAd = useCallback(() => {
+  // 광고 로드 함수 (동적 import 사용으로 안전하게 처리)
+  const loadAd = useCallback(async () => {
     // 이미 로드 시도했으면 무시 (중복 방지)
     if (hasLoadedRef.current) {
       return;
     }
     hasLoadedRef.current = true;
+
+    // GoogleAdMob 동적 import 시도 (에러가 발생해도 전체 플로우를 막지 않음)
+    let GoogleAdMob = null;
+    try {
+      const webFramework = await import('@apps-in-toss/web-framework');
+      GoogleAdMob = webFramework?.GoogleAdMob || null;
+    } catch (error) {
+      console.log('[ScenarioInputPage] GoogleAdMob 동적 import 실패. 광고 없이 진행합니다.', error.message || error);
+      return; // 광고 없이 계속 진행
+    }
 
     // GoogleAdMob 객체 존재 여부 확인
     if (!GoogleAdMob || !GoogleAdMob.loadAppsInTossAdMob) {
@@ -82,10 +90,10 @@ export const ScenarioInputPage = () => {
     }
 
     try {
-      // 광고 로드
+      // 광고 로드 (전면형 광고)
       const cleanup = GoogleAdMob.loadAppsInTossAdMob({
         options: {
-          adGroupId: AD_GROUP_ID,
+          adGroupId: AD_GROUP_IDS.INTERSTITIAL,
         },
         onEvent: (event) => {
           console.log('[ScenarioInputPage] 광고 이벤트:', event.type);
@@ -115,8 +123,12 @@ export const ScenarioInputPage = () => {
   }, []);
 
   // 컴포넌트 마운트 시 광고 로드 시작 (한 번만 실행)
+  // 광고 로드 에러가 발생해도 페이지는 정상 작동
   useEffect(() => {
-    loadAd();
+    loadAd().catch((error) => {
+      console.error('[ScenarioInputPage] 광고 로드 중 예상치 못한 에러:', error);
+      // 에러가 발생해도 페이지는 정상 작동
+    });
 
     // 컴포넌트 언마운트 시 광고 정리 (페이지를 벗어날 때만 정리)
     return () => {

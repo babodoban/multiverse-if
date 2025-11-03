@@ -33,8 +33,13 @@ export default async function handler(req, res) {
       allowedOrigin = origin;
       console.log(`[CORS] ✅ Vercel preview URL 허용: ${origin}`);
     }
-    // 2. 로컬 개발 환경
-    else if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('172.30.1.14')) {
+    // 2. 로컬 개발 환경 (포트 번호 포함하여 체크)
+    else if (
+      origin.includes('localhost') || 
+      origin.includes('127.0.0.1') || 
+      origin.includes('172.30.1.14') ||
+      /^https?:\/\/(localhost|127\.0\.0\.1|172\.30\.1\.14)(:\d+)?/.test(origin)
+    ) {
       allowedOrigin = origin;
       console.log(`[CORS] ✅ 로컬 개발 환경 허용: ${origin}`);
     }
@@ -98,18 +103,28 @@ export default async function handler(req, res) {
   }
 
   // 모든 응답에 CORS 헤더 추가 (POST 요청 포함)
+  // 안드로이드 브라우저를 위한 명시적 헤더 설정
   Object.keys(corsHeaders).forEach((key) => {
     res.setHeader(key, corsHeaders[key]);
   });
 
+  // 디버깅: 요청 메서드 로깅
+  console.log(`[Request] Method: ${req.method}, Origin: ${origin}, User-Agent: ${req.headers['user-agent']?.substring(0, 50)}...`);
+
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
+    console.log(`[Request] ❌ Method not allowed: ${req.method}`);
+    // CORS 헤더를 포함한 에러 응답
+    res.writeHead(405, corsHeaders);
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
     return;
   }
 
   // req.body 파싱 (Vercel에서는 자동 파싱되지만 명시적으로 확인)
   if (!req.body) {
-    res.status(400).json({ error: 'Request body is missing' });
+    console.log(`[Request] ❌ Request body is missing`);
+    // CORS 헤더를 포함한 에러 응답
+    res.writeHead(400, corsHeaders);
+    res.end(JSON.stringify({ error: 'Request body is missing' }));
     return;
   }
 
@@ -118,7 +133,10 @@ export default async function handler(req, res) {
 
     // 입력 검증
     if (!basicInfo || !scenario) {
-      res.status(400).json({ error: 'Missing required fields' });
+      console.log(`[Request] ❌ Missing required fields: basicInfo=${!!basicInfo}, scenario=${!!scenario}`);
+      // CORS 헤더를 포함한 에러 응답
+      res.writeHead(400, corsHeaders);
+      res.end(JSON.stringify({ error: 'Missing required fields' }));
       return;
     }
 
@@ -249,9 +267,21 @@ export default async function handler(req, res) {
       message: result.message_to_current_self || result.message || '',
     };
 
-    res.status(200).json(formattedResult);
+    // 성공 응답 (CORS 헤더는 이미 설정됨)
+    console.log(`[Response] ✅ Success: multiverseName=${formattedResult.multiverseName}`);
+    res.writeHead(200, {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+    });
+    res.end(JSON.stringify(formattedResult));
+    return;
   } catch (error) {
-    console.error('Error generating story:', error);
+    console.error('[Error] ❌ Story generation failed:', {
+      error: error.message,
+      stack: error.stack,
+      response: error.response?.status,
+      responseData: error.response?.data,
+    });
     
     // OpenAI API 에러 타입별 처리
     let statusCode = 500;
@@ -291,12 +321,17 @@ export default async function handler(req, res) {
       }
     }
     
-    // 에러 응답에도 CORS 헤더 포함 (이미 함수 시작 부분에서 설정됨)
-    res.status(statusCode).json({
+    // 에러 응답에도 CORS 헤더 포함 (writeHead 사용으로 확실하게 전송)
+    console.log(`[Response] ❌ Error: statusCode=${statusCode}, userMessage=${userMessage}`);
+    res.writeHead(statusCode, {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+    });
+    res.end(JSON.stringify({
       error: errorMessage,
       message: userMessage,
       details: error.message,
-    });
+    }));
     return;
   }
 }

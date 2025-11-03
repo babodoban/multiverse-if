@@ -1,18 +1,17 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
-import { GoogleAdMob } from '@apps-in-toss/web-framework';
+// GoogleAdMob은 정적 import하지 않음 (웹뷰 환경에서 에러 발생 가능)
+// 대신 동적 import로 안전하게 로드
+import { adStateStore } from '../utils/adStore';
 import './LoadingPage.css';
 
 const TIMEOUT_SECONDS = 30; // 30초 타임아웃
 
-// 광고 그룹 ID (환경 변수 또는 하드코딩)
-const AD_GROUP_ID = import.meta.env.VITE_AD_GROUP_ID || '<AD_GROUP_ID>';
-
-// 광고 로드 상태를 전역적으로 공유하기 위한 간단한 스토어 (ScenarioInputPage와 동일)
-const adStateStore = {
-  adLoaded: false,
-  adCleanup: null,
+/** 광고 그룹 ID */
+const AD_GROUP_IDS = {
+  REWARDED: 'ait-ad-test-rewarded-id',      // 보상형 광고
+  INTERSTITIAL: 'ait-ad-test-interstitial-id',  // 전면형 광고
 };
 
 export const LoadingPage = () => {
@@ -36,15 +35,26 @@ export const LoadingPage = () => {
     }
   }, [loadingState.isLoading, loadingState.error, resultInfo.story, navigate]);
 
-  // 광고 표시 함수
-  const showAd = useCallback(() => {
+  // 광고 표시 함수 (안전하게 래핑)
+  const showAd = useCallback(async () => {
     // 이미 광고를 표시했으면 무시
     if (adShownRef.current) {
       return;
     }
 
+    // GoogleAdMob 동적 import 시도 (에러가 발생해도 전체 플로우를 막지 않음)
+    let AdMobLib = null;
+    try {
+      const webFramework = await import('@apps-in-toss/web-framework');
+      AdMobLib = webFramework?.GoogleAdMob || null;
+    } catch (error) {
+      console.log('[LoadingPage] GoogleAdMob 동적 import 실패. 광고 없이 진행합니다.', error.message || error);
+      checkAndNavigate();
+      return;
+    }
+
     // GoogleAdMob 객체 및 showAppsInTossAdMob 함수 존재 여부 확인
-    if (!GoogleAdMob || !GoogleAdMob.showAppsInTossAdMob) {
+    if (!AdMobLib || !AdMobLib.showAppsInTossAdMob) {
       console.log('[LoadingPage] GoogleAdMob showAppsInTossAdMob이 사용할 수 없습니다. 광고 없이 진행합니다.');
       // 광고 표시 실패 시 결과 확인 후 이동
       checkAndNavigate();
@@ -52,7 +62,7 @@ export const LoadingPage = () => {
     }
 
     // isSupported 함수 존재 여부 확인 (웹 환경에서는 없을 수 있음)
-    if (!GoogleAdMob.showAppsInTossAdMob.isSupported) {
+    if (!AdMobLib.showAppsInTossAdMob.isSupported) {
       console.log('[LoadingPage] 광고 표시 지원 함수가 없습니다. 광고 없이 진행합니다.');
       checkAndNavigate();
       return;
@@ -61,7 +71,7 @@ export const LoadingPage = () => {
     // 안전하게 isSupported 체크 (웹 브라우저에서는 에러 발생 가능)
     let isSupported = false;
     try {
-      isSupported = GoogleAdMob.showAppsInTossAdMob.isSupported() === true;
+      isSupported = AdMobLib.showAppsInTossAdMob.isSupported() === true;
     } catch (error) {
       // 웹 브라우저 환경에서 발생하는 에러 - 광고 없이 진행
       console.log('[LoadingPage] 광고 표시 지원 여부 확인 실패. 광고 없이 진행합니다.', error.message || error);
@@ -87,9 +97,9 @@ export const LoadingPage = () => {
 
     try {
       // 전면형 광고 표시
-      GoogleAdMob.showAppsInTossAdMob({
+      AdMobLib.showAppsInTossAdMob({
         options: {
-          adGroupId: AD_GROUP_ID,
+          adGroupId: AD_GROUP_IDS.INTERSTITIAL,
         },
         onEvent: (event) => {
           console.log('[LoadingPage] 광고 표시 이벤트:', event.type);
@@ -169,10 +179,14 @@ export const LoadingPage = () => {
 
     loadStory();
 
-    // 광고 표시 시도 (API 호출과 독립적으로 실행)
+    // 광고 표시 시도 (API 호출과 독립적으로 실행, 에러가 발생해도 API 호출은 계속)
     // 광고가 로드되어 있고 아직 표시하지 않았다면 표시
     if (adStateStore.adLoaded && !adShownRef.current) {
-      showAd();
+      showAd().catch((error) => {
+        console.error('[LoadingPage] 광고 표시 중 예상치 못한 에러:', error);
+        // 광고 에러가 발생해도 API 호출은 계속 진행
+        checkAndNavigate();
+      });
     }
 
     // 컴포넌트 언마운트 시 타임아웃 정리
