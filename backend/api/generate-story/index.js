@@ -14,7 +14,7 @@ const openai = new OpenAI({
 });
 
 export default async function handler(req, res) {
-  // 허용된 출처 목록
+  // 허용된 출처 목록 (정확히 일치)
   const allowedOrigins = [
     'https://multiverse-if.vercel.app',
     'https://multiverse-if.apps.tossmini.com',
@@ -22,13 +22,17 @@ export default async function handler(req, res) {
     'http://172.30.1.14:5713',
   ];
 
+  // 허용된 패턴 (Vercel preview 배포 등)
+  const allowedPatterns = [
+    /^https:\/\/multiverse-if-.*\.vercel\.app$/, // multiverse-if-*.vercel.app 패턴
+  ];
+
   // 요청 출처 확인
-  const origin = req.headers.origin || req.headers.referer;
+  const origin = req.headers.origin;
   let allowedOrigin = null;
 
   // 출처가 허용 목록에 있는지 확인
   if (origin) {
-    // URL에서 origin 부분만 추출 (protocol + host + port)
     try {
       const originUrl = new URL(origin);
       const originWithoutPath = `${originUrl.protocol}//${originUrl.host}`;
@@ -38,37 +42,70 @@ export default async function handler(req, res) {
         ? `${originUrl.protocol}//${originUrl.hostname}:${originUrl.port}`
         : originWithoutPath;
       
-      // 허용 목록과 정확히 일치하는지 확인 (포트 포함/미포함 모두 체크)
+      // 1. 정확히 일치하는 출처 확인
       if (allowedOrigins.includes(originWithoutPath) || allowedOrigins.includes(originWithPort)) {
         allowedOrigin = originWithPort || originWithoutPath;
-      } else if (allowedOrigins.includes(origin)) {
-        // 전체 origin 문자열이 목록에 있는 경우
+        console.log(`[CORS] 정확 일치: ${origin} -> ${allowedOrigin}`);
+      }
+      // 2. 패턴 매칭 확인 (Vercel preview 배포 등)
+      else {
+        for (const pattern of allowedPatterns) {
+          if (pattern.test(originWithoutPath)) {
+            allowedOrigin = originWithoutPath;
+            console.log(`[CORS] 패턴 일치: ${origin} -> ${allowedOrigin}`);
+            break;
+          }
+        }
+      }
+      
+      // 3. 전체 origin 문자열이 목록에 있는 경우
+      if (!allowedOrigin && allowedOrigins.includes(origin)) {
         allowedOrigin = origin;
+        console.log(`[CORS] 전체 문자열 일치: ${origin}`);
+      }
+      
+      // 매칭 실패 시 로그
+      if (!allowedOrigin) {
+        console.log(`[CORS] 출처 허용 실패: ${origin} (originWithoutPath: ${originWithoutPath})`);
       }
     } catch (e) {
+      console.error(`[CORS] URL 파싱 실패: ${origin}`, e);
       // URL 파싱 실패 시 origin 문자열 그대로 비교
       if (allowedOrigins.includes(origin)) {
         allowedOrigin = origin;
+      } else {
+        // 패턴 매칭 시도
+        for (const pattern of allowedPatterns) {
+          if (pattern.test(origin)) {
+            allowedOrigin = origin;
+            console.log(`[CORS] 패턴 일치 (파싱 실패 후): ${origin}`);
+            break;
+          }
+        }
       }
     }
+  } else {
+    console.log('[CORS] Origin 헤더가 없습니다.');
   }
 
   // CORS 헤더 설정
+  const corsOrigin = allowedOrigin || allowedOrigins[0]; // 기본값: 첫 번째 허용 출처
   const corsHeaders = {
-    'Access-Control-Allow-Origin': allowedOrigin || allowedOrigins[0], // 기본값: 첫 번째 허용 출처
+    'Access-Control-Allow-Origin': corsOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400', // 24시간
     'Access-Control-Allow-Credentials': 'true', // 필요시 쿠키 포함 가능
   };
 
-  // 모든 응답에 CORS 헤더 추가
+  // 모든 응답에 CORS 헤더 추가 (OPTIONS 요청 전에도 설정)
   Object.keys(corsHeaders).forEach((key) => {
     res.setHeader(key, corsHeaders[key]);
   });
 
-  // OPTIONS 요청 (Preflight) 처리
+  // OPTIONS 요청 (Preflight) 처리 - 가장 먼저 처리
   if (req.method === 'OPTIONS') {
+    console.log(`[CORS] OPTIONS 요청 처리: origin=${origin}, allowedOrigin=${corsOrigin}`);
     res.status(200).end();
     return;
   }
