@@ -154,7 +154,9 @@ export const LoadingPage = () => {
       }, TIMEOUT_SECONDS * 1000);
 
       try {
+        console.log('[LoadingPage] generateStory 호출 시작');
         await generateStory();
+        console.log('[LoadingPage] generateStory 호출 완료');
         
         // 성공 시 결과 페이지로 이동은 광고 처리 후 결정
         // 타임아웃 정리

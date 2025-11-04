@@ -14,6 +14,9 @@ const openai = new OpenAI({
 });
 
 export default async function handler(req, res) {
+  // ✅ 모든 요청에 대한 로깅 (모바일 요청 도달 확인용)
+  console.log(`[Handler] 요청 도달: method=${req.method}, url=${req.url}, origin=${req.headers.origin || 'none'}, referer=${req.headers.referer || 'none'}`);
+  
   // Vercel preview URL 패턴 매칭 함수
   const isVercelPreviewUrl = (url) => {
     if (!url) return false;
@@ -21,12 +24,37 @@ export default async function handler(req, res) {
   };
 
   // 요청 출처 확인 (origin 헤더 우선 확인)
-  const origin = req.headers.origin || req.headers.referer || '';
+  // 웹뷰 환경에서는 origin이 null일 수 있으므로 referer도 확인
+  const origin = req.headers.origin || '';
+  const referer = req.headers.referer || '';
+  const userAgent = req.headers['user-agent'] || '';
+  
+  // ✅ 모든 요청 헤더 로깅 (모바일 디버깅용)
+  console.log(`[CORS] 요청 헤더:`, {
+    origin: origin || 'none',
+    referer: referer || 'none',
+    userAgent: userAgent.substring(0, 100) || 'none',
+    method: req.method,
+  });
+  
+  // 웹뷰 환경 감지 (User-Agent와 Origin 조합)
+  const isWebViewRequest = 
+    !origin || 
+    origin === 'null' || 
+    origin === 'file://' ||
+    referer.includes('file://') ||
+    /wv/i.test(userAgent) ||
+    (userAgent && !/Safari|Chrome|CriOS|FxiOS|Edg/i.test(userAgent) && /iPhone|iPad|iPod|Android/i.test(userAgent));
   
   // CORS 허용 origin 결정
   let allowedOrigin = '*'; // 기본값을 *로 설정 (더 안전한 fallback)
   
-  if (origin && origin !== 'null' && origin !== 'file://') {
+  // 웹뷰 요청인 경우 먼저 처리
+  if (isWebViewRequest) {
+    allowedOrigin = '*';
+    console.log(`[CORS] 📱 웹뷰 환경 감지: origin=${origin}, referer=${referer}, userAgent=${userAgent.substring(0, 50)}...`);
+    console.log(`[CORS] ✅ 웹뷰 환경 - * 허용`);
+  } else if (origin && origin !== 'null' && origin !== 'file://') {
     // 1. Vercel preview URL인 경우 허용 (가장 먼저 체크)
     // 예: https://multiverse-if-dpf1.vercel.app (프론트엔드 preview URL)
     if (isVercelPreviewUrl(origin)) {
@@ -75,6 +103,8 @@ export default async function handler(req, res) {
     'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400', // 24시간
+    'Cache-Control': 'no-store', // ✅ iOS Preflight 캐싱 방지 (중요!)
+    'Vary': 'Origin', // ✅ Origin별 캐시 구분
     ...(useCredentials ? { 'Access-Control-Allow-Credentials': 'true' } : {}),
   };
 
@@ -91,14 +121,25 @@ export default async function handler(req, res) {
 
   // OPTIONS 요청 (Preflight) 처리 - 가장 먼저 처리
   if (req.method === 'OPTIONS') {
-    console.log(`[CORS] OPTIONS 요청 처리: origin=${origin}, allowedOrigin=${allowedOrigin}`);
+    console.log(`[CORS] ✅ OPTIONS 요청 처리: origin=${origin || 'none'}, referer=${referer || 'none'}, allowedOrigin=${allowedOrigin}`);
     console.log(`[CORS] OPTIONS CORS 헤더:`, corsHeaders);
     
     // Vercel Serverless Functions에서 헤더 전송을 보장하기 위해 writeHead만 사용
     // setHeader와 writeHead를 함께 사용하지 않음 (충돌 방지)
-    res.writeHead(200, corsHeaders);
-    res.end();
-    console.log(`[CORS] OPTIONS 응답 전송 완료`);
+    // ✅ iOS Preflight 캐싱 방지를 위해 Cache-Control: no-store 포함
+    try {
+      res.writeHead(200, corsHeaders);
+      res.end();
+      console.log(`[CORS] ✅ OPTIONS 응답 전송 완료 (Cache-Control: no-store 포함)`);
+    } catch (error) {
+      console.error(`[CORS] ❌ OPTIONS 응답 전송 실패:`, error);
+      // 에러가 발생해도 응답 시도
+      try {
+        res.status(200).json({ message: 'OK' });
+      } catch (e) {
+        console.error(`[CORS] ❌ OPTIONS 응답 대체 방법 실패:`, e);
+      }
+    }
     return;
   }
 
@@ -184,10 +225,11 @@ export default async function handler(req, res) {
 }`;
 
     // ========================================
-    // ChatGPT API 호출 (Fallback 전략: gpt-5 -> gpt-4o)
+    // ChatGPT API 호출 (Fallback 전략: gpt-4o 우선 사용)
     // ========================================
-    // 시도 순서: gpt-5 기본 사용, 실패 시 gpt-4o로 자동 전환
-    const models = ['gpt-5', 'gpt-4o'];
+    // gpt-5는 reasoning 모델로 토큰 한도 초과 문제가 있으므로 gpt-4o 우선 사용
+    // 시도 순서: gpt-4o 기본 사용, 필요시 gpt-5 시도
+    const models = ['gpt-4o', 'gpt-5'];
     
     let completion = null;
     let lastError = null;
@@ -212,9 +254,10 @@ export default async function handler(req, res) {
               content: prompt,
             },
           ],
-          temperature: 0.9,
+          temperature: 1,
           // gpt-5 또는 o1 모델은 max_completion_tokens 사용, 그 외는 max_tokens 사용
-          ...(isGpt5 ? { max_completion_tokens: 1200 } : { max_tokens: 1200 }),
+          // gpt-5 reasoning 모델은 토큰 한도가 부족할 수 있으므로 더 크게 설정
+          ...(isGpt5 ? { max_completion_tokens: 2000 } : { max_tokens: 1200 }),
           response_format: { type: 'json_object' },
         });
         
@@ -244,8 +287,57 @@ export default async function handler(req, res) {
       console.log(`[OpenAI] 최종 사용 모델: ${usedModel}`);
     }
 
-    const responseText = completion.choices[0].message.content;
-    const result = JSON.parse(responseText);
+    // OpenAI 응답 파싱 (안전하게 처리)
+    // gpt-5 reasoning 모델의 경우 응답 구조가 다를 수 있음
+    const choice = completion.choices[0];
+    const message = choice?.message || {};
+    
+    // 상세 로깅 (디버깅용)
+    console.log(`[OpenAI] 응답 구조 확인:`, {
+      finish_reason: choice?.finish_reason,
+      message_keys: Object.keys(message),
+      has_content: !!message.content,
+      content_length: message.content?.length || 0,
+      model: usedModel,
+    });
+    
+    // content 필드 확인 (일반 모델)
+    let responseText = message.content;
+    
+    // gpt-5 reasoning 모델의 경우, content가 없을 수 있으므로 다른 필드 확인
+    if (!responseText && usedModel?.includes('gpt-5')) {
+      console.log(`[OpenAI] gpt-5 모델이지만 content가 없습니다. 전체 응답 확인:`, JSON.stringify(completion, null, 2));
+      // finish_reason이 'length'인 경우 토큰 한도 초과
+      if (choice?.finish_reason === 'length') {
+        console.warn(`[OpenAI] ⚠️ 토큰 한도 초과 (finish_reason: length). max_completion_tokens를 증가시키거나 다른 모델 사용 권장.`);
+        // content가 없으면 빈 응답으로 처리하고 에러 발생
+        throw new Error('응답이 토큰 한도로 인해 잘렸습니다. max_completion_tokens를 증가시키거나 gpt-4o 모델을 사용해주세요.');
+      }
+    }
+    
+    if (!responseText) {
+      console.error('[OpenAI] 응답 내용이 비어있습니다:', {
+        completion: JSON.stringify(completion, null, 2),
+        choice: JSON.stringify(choice, null, 2),
+        message: JSON.stringify(message, null, 2),
+      });
+      throw new Error('OpenAI 응답이 비어있습니다. 모델 응답 구조를 확인해주세요.');
+    }
+    
+    console.log(`[OpenAI] 응답 텍스트 길이: ${responseText.length}, 첫 200자: ${responseText.substring(0, 200)}`);
+    
+    // JSON 파싱 (안전하게 처리)
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('[OpenAI] JSON 파싱 실패:', {
+        error: parseError.message,
+        responseText: responseText.substring(0, 500),
+        fullResponseText: responseText,
+      });
+      throw new Error(`JSON 파싱 실패: ${parseError.message}. 응답 내용: ${responseText.substring(0, 200)}`);
+    }
 
     // 키워드가 배열인 경우 문자열로 변환
     let keywords = '';
