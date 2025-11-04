@@ -61,7 +61,7 @@ export default async function handler(req, res) {
       allowedOrigin = origin;
       console.log(`[CORS] ✅ Vercel preview URL 허용: ${origin}`);
     }
-    // 2. 로컬 개발 환경 (포트 번호 포함하여 체크)
+    // 2. 로컬 개발 환경 (포트 번호 포함하여 체크) - 모두 허용
     else if (
       origin.includes('localhost') || 
       origin.includes('127.0.0.1') || 
@@ -81,9 +81,9 @@ export default async function handler(req, res) {
       allowedOrigin = origin;
       console.log(`[CORS] ✅ 허용된 출처 일치: ${origin}`);
     }
-    // 4. 알 수 없는 출처도 일단 허용 (개발 중 안전을 위해)
+    // 4. 모든 출처 허용 (개발 환경 및 웹뷰 환경 지원)
     else {
-      console.log(`[CORS] ⚠️ 알 수 없는 출처이지만 허용: ${origin}`);
+      console.log(`[CORS] ✅ 모든 출처 허용 (개발 환경 지원): ${origin}`);
       allowedOrigin = origin;
     }
   } else if (origin === 'null' || origin === 'file://') {

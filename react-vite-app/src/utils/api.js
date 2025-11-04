@@ -1,34 +1,7 @@
 // API 기본 URL 설정
-// 모바일 웹뷰에서는 localhost를 사용할 수 없으므로 항상 운영 URL 사용
+// 모든 환경에서 운영 API URL만 사용 (localhost 제거)
 // 운영 백엔드 URL: https://multiverse-if.vercel.app/api
-const getApiBaseUrl = () => {
-  // 환경 변수에서 URL 가져오기
-  const envUrl = import.meta.env.VITE_API_BASE_URL;
-  
-  // 웹뷰 환경 감지 (간단한 체크)
-  const isWebView = !window.location.origin || 
-                    window.location.origin === 'null' || 
-                    window.location.origin === 'file://' ||
-                    window.location.href.startsWith('file://') ||
-                    window.ReactNativeWebView ||
-                    window.webkit?.messageHandlers;
-  
-  // 웹뷰 환경이거나 모바일 환경에서는 항상 운영 URL 사용
-  if (isWebView || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-    console.log('📱 모바일/웹뷰 환경 감지 - 운영 API URL 사용');
-    return 'https://multiverse-if.vercel.app/api';
-  }
-  
-  // 데스크탑 환경에서만 환경 변수 또는 localhost 사용
-  if (envUrl && !envUrl.includes('localhost')) {
-    return envUrl;
-  }
-  
-  // 기본값: 운영 URL (모바일 호환성)
-  return 'https://multiverse-if.vercel.app/api';
-};
-
-const API_BASE_URL = getApiBaseUrl();
+const API_BASE_URL = 'https://multiverse-if.vercel.app/api';
 
 // 타임아웃 설정 (30초)
 const TIMEOUT = 30000;
