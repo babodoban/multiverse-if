@@ -1,7 +1,8 @@
 {
   "functions": {
-    "api/generate-story/index.js": {
-      "maxDuration": 30
+    "backend/api/**/*.js": {
+      "maxDuration": 30,
+      "runtime": "nodejs18.x"
     }
   },
   "headers": [
