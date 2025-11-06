@@ -18,6 +18,10 @@ export default async function handler(req, res) {
   // 1. Origin 확인 및 CORS 헤더 설정
   // ============================================
   const origin = req.headers.origin || '';
+  const method = req.method || '';
+  
+  // 로깅 (디버깅용)
+  console.log(`[CORS] 요청 도달: method=${method}, origin=${origin || 'none'}`);
   
   // 허용할 Origin 결정
   let allowedOrigin = '*';
@@ -25,16 +29,27 @@ export default async function handler(req, res) {
   // localhost 개발 환경 허용 (포트 번호 포함)
   if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
     allowedOrigin = origin;
+    console.log(`[CORS] ✅ localhost 허용: ${origin}`);
   }
-  // Vercel 도메인 허용
-  else if (origin && (origin.includes('vercel.app') || origin.includes('multiverse-if'))) {
+  // Vercel 도메인 허용 (모든 vercel.app 도메인)
+  else if (origin && origin.includes('vercel.app')) {
     allowedOrigin = origin;
+    console.log(`[CORS] ✅ Vercel 도메인 허용: ${origin}`);
+  }
+  // multiverse-if 포함 도메인 허용
+  else if (origin && origin.includes('multiverse-if')) {
+    allowedOrigin = origin;
+    console.log(`[CORS] ✅ multiverse-if 도메인 허용: ${origin}`);
   }
   // 프로덕션 도메인 허용
   else if (origin && origin.includes('tossmini.com')) {
     allowedOrigin = origin;
+    console.log(`[CORS] ✅ tossmini.com 도메인 허용: ${origin}`);
   }
   // 그 외는 * 허용 (웹뷰 환경 등)
+  else {
+    console.log(`[CORS] ⚠️ 알 수 없는 origin, * 허용: ${origin || 'none'}`);
+  }
   
   // CORS 헤더 설정
   const corsHeaders = {
@@ -47,11 +62,26 @@ export default async function handler(req, res) {
   // ============================================
   // 2. OPTIONS 요청 (Preflight) 처리 - 가장 먼저!
   // ============================================
-  if (req.method === 'OPTIONS') {
+  if (method === 'OPTIONS') {
+    console.log(`[CORS] ✅ OPTIONS 요청 처리: origin=${origin}, allowedOrigin=${allowedOrigin}`);
+    console.log(`[CORS] OPTIONS 헤더:`, corsHeaders);
+    
     // OPTIONS 요청에 대해 CORS 헤더를 명시적으로 설정하고 응답
-    res.writeHead(200, corsHeaders);
-    res.end();
-    return;
+    // Vercel에서는 writeHead가 더 확실하게 작동함
+    try {
+      res.writeHead(200, corsHeaders);
+      res.end();
+      console.log(`[CORS] ✅ OPTIONS 응답 전송 완료`);
+      return;
+    } catch (error) {
+      console.error(`[CORS] ❌ OPTIONS 응답 실패:`, error);
+      // 대체 방법 시도
+      Object.keys(corsHeaders).forEach((key) => {
+        res.setHeader(key, corsHeaders[key]);
+      });
+      res.status(200).end();
+      return;
+    }
   }
   
   // ============================================
@@ -64,7 +94,8 @@ export default async function handler(req, res) {
   // ============================================
   // 4. POST 요청만 허용
   // ============================================
-  if (req.method !== 'POST') {
+  if (method !== 'POST') {
+    console.log(`[CORS] ❌ Method not allowed: ${method}`);
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
@@ -75,9 +106,12 @@ export default async function handler(req, res) {
   const { basicInfo, scenario } = req.body || {};
   
   if (!basicInfo || !scenario) {
+    console.log(`[CORS] ❌ Missing required fields`);
     res.status(400).json({ error: 'Missing required fields: basicInfo and scenario are required' });
     return;
   }
+  
+  console.log(`[CORS] ✅ POST 요청 처리 시작`);
   
   // ============================================
   // 6. OpenAI API 호출
@@ -125,6 +159,7 @@ export default async function handler(req, res) {
 }`;
 
     // OpenAI API 호출
+    console.log(`[OpenAI] API 호출 시작`);
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -141,6 +176,8 @@ export default async function handler(req, res) {
       max_tokens: 2000,
       response_format: { type: 'json_object' },
     });
+    
+    console.log(`[OpenAI] ✅ API 호출 성공`);
     
     // 응답 파싱
     const responseText = completion.choices[0]?.message?.content;
@@ -172,10 +209,11 @@ export default async function handler(req, res) {
     };
     
     // 성공 응답
+    console.log(`[CORS] ✅ 성공 응답 전송`);
     res.status(200).json(formattedResult);
     
   } catch (error) {
-    console.error('Story generation error:', error);
+    console.error('[Error] ❌ Story generation error:', error);
     
     // 에러 타입별 처리
     let statusCode = 500;
@@ -192,6 +230,7 @@ export default async function handler(req, res) {
       }
     }
     
+    console.log(`[CORS] ❌ 에러 응답 전송: statusCode=${statusCode}`);
     res.status(statusCode).json({
       error: error.message || 'Failed to generate story',
       message: errorMessage,
