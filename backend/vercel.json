@@ -26,5 +26,11 @@
         }
       ]
     }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/api/$1"
+    }
   ]
 }
